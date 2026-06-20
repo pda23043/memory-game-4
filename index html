@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory Game</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1d3557, #457b9d);
+      color: white;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 25px;
+    }
+
+    .menu {
+      margin-top: 40px;
+    }
+
+    .menu button,
+    .restart-btn,
+    .back-btn {
+      padding: 12px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background: #e63946;
+      color: white;
+      cursor: pointer;
+      margin: 10px;
+    }
+
+    .menu button:hover,
+    .restart-btn:hover,
+    .back-btn:hover {
+      background: #ff4d5a;
+    }
+
+    .info {
+      font-size: 20px;
+      margin: 10px;
+    }
+
+    .game {
+      width: 520px;
+      margin: 25px auto;
+      display: grid;
+      grid-template-columns: repeat(4, 120px);
+      gap: 12px;
+    }
+
+    .card {
+      width: 120px;
+      height: 120px;
+      background: #a8dadc;
+      color: #1d3557;
+      border-radius: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      font-weight: bold;
+      transition: 0.3s;
+      user-select: none;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      background: #f1faee;
+    }
+
+    .card.flipped,
+    .card.matched {
+      background: white;
+      color: #e63946;
+      transform: rotateY(180deg);
+    }
+
+    #gameArea {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .game {
+        width: 360px;
+        grid-template-columns: repeat(4, 80px);
+        gap: 10px;
+      }
+
+      .card {
+        width: 80px;
+        height: 80px;
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Memory Game</h1>
+
+  <div id="menu" class="menu">
+    <h2>Διάλεξε κατηγορία</h2>
+    <button onclick="chooseGame('numbers')">Memory με Αριθμούς</button>
+    <button onclick="chooseGame('symbols')">Memory με Σύμβολα</button>
+  </div>
+
+  <div id="gameArea">
+    <div class="info">Κατηγορία: <span id="categoryName"></span></div>
+    <div class="info">Κινήσεις: <span id="moves">0</span></div>
+    <div class="info" id="message">Βρες όλα τα ζευγάρια!</div>
+
+    <div class="game" id="game"></div>
+
+    <button class="restart-btn" onclick="restartGame()">Ξεκίνα ξανά</button>
+    <button class="back-btn" onclick="backToMenu()">Πίσω στο μενού</button>
+  </div>
+
+  <script>
+    const numberCards = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    const symbolCards = ["★", "●", "◆", "▲", "☀", "☁", "♥", "♣"];
+
+    let selectedCards = [];
+    let cards = [];
+
+    let firstCard = null;
+    let secondCard = null;
+    let lockBoard = false;
+    let moves = 0;
+    let matchedPairs = 0;
+
+    const menu = document.getElementById("menu");
+    const gameArea = document.getElementById("gameArea");
+    const game = document.getElementById("game");
+    const movesText = document.getElementById("moves");
+    const message = document.getElementById("message");
+    const categoryName = document.getElementById("categoryName");
+
+    function chooseGame(type) {
+      if (type === "numbers") {
+        selectedCards = numberCards;
+        categoryName.textContent = "Αριθμοί";
+      } else {
+        selectedCards = symbolCards;
+        categoryName.textContent = "Σύμβολα";
+      }
+
+      menu.style.display = "none";
+      gameArea.style.display = "block";
+
+      startGame();
+    }
+
+    function startGame() {
+      game.innerHTML = "";
+      moves = 0;
+      matchedPairs = 0;
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+
+      movesText.textContent = moves;
+      message.textContent = "Βρες όλα τα ζευγάρια!";
+
+      cards = [...selectedCards, ...selectedCards];
+      cards.sort(() => Math.random() - 0.5);
+
+      cards.forEach(value => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.dataset.value = value;
+        card.textContent = "?";
+
+        card.addEventListener("click", flipCard);
+        game.appendChild(card);
+      });
+    }
+
+    function flipCard() {
+      if (lockBoard) return;
+      if (this === firstCard) return;
+      if (this.classList.contains("matched")) return;
+
+      this.textContent = this.dataset.value;
+      this.classList.add("flipped");
+
+      if (!firstCard) {
+        firstCard = this;
+        return;
+      }
+
+      secondCard = this;
+      moves++;
+      movesText.textContent = moves;
+
+      checkMatch();
+    }
+
+    function checkMatch() {
+      if (firstCard.dataset.value === secondCard.dataset.value) {
+        firstCard.classList.add("matched");
+        secondCard.classList.add("matched");
+
+        matchedPairs++;
+        resetCards();
+
+        if (matchedPairs === selectedCards.length) {
+          message.textContent = "Μπράβο! Τα βρήκες όλα σε " + moves + " κινήσεις!";
+        }
+      } else {
+        lockBoard = true;
+
+        setTimeout(() => {
+          firstCard.textContent = "?";
+          secondCard.textContent = "?";
+
+          firstCard.classList.remove("flipped");
+          secondCard.classList.remove("flipped");
+
+          resetCards();
+        }, 900);
+      }
+    }
+
+    function resetCards() {
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    function backToMenu() {
+      gameArea.style.display = "none";
+      menu.style.display = "block";
+    }
+  </script>
+
+</body>
+</html>
